@@ -2,15 +2,17 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>片脚立ち上がり パワー指標計算アプリ</title>
+  <title>パワー指標計算アプリ</title>
   <style>
     body { font-family: sans-serif; padding: 2em; }
     input, button, select { margin: 5px 0; padding: 0.5em; width: 200px; }
+    table { margin-top: 1em; border-collapse: collapse; width: 100%; max-width: 800px; }
+    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
     .result { margin-top: 1em; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h1>パワー指標（W）計算＆CSV保存アプリ</h1>
+  <h1>パワー指標（W）計算＆CSV出力</h1>
 
   <label>測定日:</label><br>
   <input type="date" id="date"><br>
@@ -37,18 +39,31 @@
   <label>所要時間（秒）:</label><br>
   <input type="number" id="time" step="0.1"><br>
 
-  <button onclick="calculateAndSave()">計算＆CSVダウンロード</button>
+  <button onclick="addRecord()">計算して記録</button>
+  <button onclick="downloadCSV()">CSVダウンロード</button>
 
   <div class="result" id="result"></div>
 
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>日付</th><th>ID</th><th>測定側</th>
+        <th>転子果長</th><th>椅子の高さ</th><th>体重</th>
+        <th>回数</th><th>所要時間</th><th>パワー(W)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
   <script>
-    // ページ読み込み時、日付に今日を自動設定
+    const records = [];
+
     window.onload = () => {
       const today = new Date().toISOString().split("T")[0];
       document.getElementById("date").value = today;
     };
 
-    function calculateAndSave() {
+    function addRecord() {
       const date = document.getElementById('date').value;
       const id = document.getElementById('id').value.trim();
       const side = document.querySelector('input[name="side"]:checked')?.value;
@@ -67,19 +82,45 @@
       const heightDiff = (hipLength - chairHeight) / 100;
       const power = (heightDiff * weight * g * reps) / time;
 
-      const resultText = `パワー指標: ${power.toFixed(2)} W`;
-      document.getElementById('result').textContent = resultText;
+      const row = [date, id, side, hipLength, chairHeight, weight, reps, time, power.toFixed(2)];
+      records.push(row);
+      addRowToTable(row);
 
-      // CSV生成
-      const csvHeader = ["日付", "ID", "測定側", "転子果長(cm)", "椅子の高さ(cm)", "体重(kg)", "回数", "所要時間(s)", "パワー指標(W)"];
-      const csvRow = [date, id, side, hipLength, chairHeight, weight, reps, time, power.toFixed(2)];
-      const csvContent = csvHeader.join(",") + "\n" + csvRow.join(",");
+      document.getElementById('result').textContent = `記録を追加しました。パワー指標: ${power.toFixed(2)} W`;
+    }
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    function addRowToTable(row) {
+      const tbody = document.querySelector("#dataTable tbody");
+      const tr = document.createElement("tr");
+      row.forEach(cell => {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    }
+
+    function downloadCSV() {
+      if (records.length === 0) {
+        alert("データがありません。");
+        return;
+      }
+
+      const header = ["日付", "ID", "測定側", "転子果長(cm)", "椅子の高さ(cm)", "体重(kg)", "回数", "所要時間(s)", "パワー(W)"];
+      let csv = [header.join(",")];
+      records.forEach(row => csv.push(row.join(",")));
+
+      // UTF-8 BOM 追加で文字化け防止
+      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      const blob = new Blob([bom, csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `power_results_${date}.csv`;
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `PowerData_${id}_${side}.csv`;
+      link.download = filename;
       link.click();
     }
   </script>
