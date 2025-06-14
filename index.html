@@ -2,15 +2,25 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>パワー指標計算アプリ</title>
+  <title>片脚立ち上がり パワー指標計算アプリ</title>
   <style>
     body { font-family: sans-serif; padding: 2em; }
-    input, button { margin: 5px 0; padding: 0.5em; width: 200px; }
+    input, button, select { margin: 5px 0; padding: 0.5em; width: 200px; }
     .result { margin-top: 1em; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h1>パワー指標（W）計算アプリ</h1>
+  <h1>パワー指標（W）計算＆CSV保存アプリ</h1>
+
+  <label>測定日:</label><br>
+  <input type="date" id="date"><br>
+
+  <label>参加者ID:</label><br>
+  <input type="text" id="id"><br>
+
+  <label>測定側:</label><br>
+  <label><input type="radio" name="side" value="右脚" checked>右脚</label>
+  <label><input type="radio" name="side" value="左脚">左脚</label><br>
 
   <label>転子果長（cm）:</label><br>
   <input type="number" id="hipLength" step="0.1"><br>
@@ -27,28 +37,50 @@
   <label>所要時間（秒）:</label><br>
   <input type="number" id="time" step="0.1"><br>
 
-  <button onclick="calculatePower()">計算する</button>
+  <button onclick="calculateAndSave()">計算＆CSVダウンロード</button>
 
   <div class="result" id="result"></div>
 
   <script>
-    function calculatePower() {
+    // ページ読み込み時、日付に今日を自動設定
+    window.onload = () => {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("date").value = today;
+    };
+
+    function calculateAndSave() {
+      const date = document.getElementById('date').value;
+      const id = document.getElementById('id').value.trim();
+      const side = document.querySelector('input[name="side"]:checked')?.value;
       const hipLength = parseFloat(document.getElementById('hipLength').value);
       const chairHeight = parseFloat(document.getElementById('chairHeight').value);
       const weight = parseFloat(document.getElementById('weight').value);
       const reps = parseFloat(document.getElementById('reps').value);
       const time = parseFloat(document.getElementById('time').value);
 
-      if (isNaN(hipLength) || isNaN(chairHeight) || isNaN(weight) || isNaN(reps) || isNaN(time) || time <= 0) {
-        document.getElementById('result').textContent = 'すべての数値を正しく入力してください（時間は0より大きく）';
+      if (!date || !id || !side || isNaN(hipLength) || isNaN(chairHeight) || isNaN(weight) || isNaN(reps) || isNaN(time) || time <= 0) {
+        document.getElementById('result').textContent = 'すべての項目を正しく入力してください。';
         return;
       }
 
       const g = 9.8;
-      const heightDiff = (hipLength - chairHeight) / 100; // m単位に変換
+      const heightDiff = (hipLength - chairHeight) / 100;
       const power = (heightDiff * weight * g * reps) / time;
 
-      document.getElementById('result').textContent = 'パワー指標: ' + power.toFixed(2) + ' W';
+      const resultText = `パワー指標: ${power.toFixed(2)} W`;
+      document.getElementById('result').textContent = resultText;
+
+      // CSV生成
+      const csvHeader = ["日付", "ID", "測定側", "転子果長(cm)", "椅子の高さ(cm)", "体重(kg)", "回数", "所要時間(s)", "パワー指標(W)"];
+      const csvRow = [date, id, side, hipLength, chairHeight, weight, reps, time, power.toFixed(2)];
+      const csvContent = csvHeader.join(",") + "\n" + csvRow.join(",");
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `PowerData_${id}_${side}.csv`;
+      link.click();
     }
   </script>
 </body>
