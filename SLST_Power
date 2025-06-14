@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>パワー指標計算アプリ</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; }
+    input, button { margin: 5px 0; padding: 0.5em; width: 200px; }
+    .result { margin-top: 1em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>パワー指標（W）計算アプリ</h1>
+
+  <label>転子果長（cm）:</label><br>
+  <input type="number" id="hipLength" step="0.1"><br>
+
+  <label>椅子の高さ（cm）:</label><br>
+  <input type="number" id="chairHeight" step="0.1"><br>
+
+  <label>体重（kg）:</label><br>
+  <input type="number" id="weight" step="0.1"><br>
+
+  <label>回数（回）:</label><br>
+  <input type="number" id="reps"><br>
+
+  <label>所要時間（秒）:</label><br>
+  <input type="number" id="time" step="0.1"><br>
+
+  <button onclick="calculatePower()">計算する</button>
+
+  <div class="result" id="result"></div>
+
+  <script>
+    function calculatePower() {
+      const hipLength = parseFloat(document.getElementById('hipLength').value);
+      const chairHeight = parseFloat(document.getElementById('chairHeight').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const reps = parseFloat(document.getElementById('reps').value);
+      const time = parseFloat(document.getElementById('time').value);
+
+      if (isNaN(hipLength) || isNaN(chairHeight) || isNaN(weight) || isNaN(reps) || isNaN(time) || time <= 0) {
+        document.getElementById('result').textContent = 'すべての数値を正しく入力してください（時間は0より大きく）';
+        return;
+      }
+
+      const g = 9.8;
+      const heightDiff = (hipLength - chairHeight) / 100; // m単位に変換
+      const power = (heightDiff * weight * g * reps) / time;
+
+      document.getElementById('result').textContent = 'パワー指標: ' + power.toFixed(2) + ' W';
+    }
+  </script>
+</body>
+</html>
